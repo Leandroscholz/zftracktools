@@ -1,21 +1,37 @@
 import tkinter as tk
 import numpy as np 
+import cv2
+import PIL.Image, PIL.ImageTk
 
-class AnnotationWindow(tk.Tk):
-    def __init__(self):
-        tk.Tk.__init__(self)
+class AnnotationWindow():
+    def __init__(self, window, img_path):       
+        self.window = window
+        
+        # load image and prepare to show in tkinter
+        self.img = cv2.imread(img_path)
+        self.height, self.width, n_channels = self.img.shape
+        self.img = PIL.Image.fromarray(self.img)
+        self.img_to_tk = PIL.ImageTk.PhotoImage(image = self.img)
+        
+        # set coordinate variables to store annotations
         self.previous_x = self.previous_y = 0
         self.x = self.y = 0
         self.points_recorded = []
-        self.canvas = tk.Canvas(self, width=400, height=400, bg="black", cursor="cross")
+        
+        # create tkinter canvas 
+        self.canvas = tk.Canvas(window, width=self.width, height=self.height, bg="black", cursor="cross")      
         self.canvas.pack(side="top", fill="both", expand=True)
-        self.button_clear = tk.Button(self, text="Clear", command=self.clear_all)
+        #add the image to canvas and prepare tkinter buttons 
+        self.canvas.create_image(0, 0, image=self.img_to_tk, anchor=tk.NW)
+        self.button_clear = tk.Button(window, text="Clear", command=self.clear_all)
         self.button_clear.pack(side="top", fill="both", expand=True)
-        self.button_extract_points = tk.Button(self, text="Extract points", command=self.extract_points)
+        self.button_extract_points = tk.Button(window, text="Extract points", command=self.extract_points)
         self.button_extract_points.pack(side="top", fill="both", expand=True)
         self.canvas.bind("<Motion>", self.tell_me_where_you_are)
         self.canvas.bind("<ButtonRelease-1>", self.draw_from_where_you_are)
-
+        
+        self.window.mainloop()
+        
     def clear_all(self):
         self.canvas.delete("all")
 
@@ -35,9 +51,12 @@ class AnnotationWindow(tk.Tk):
                                 self.x, self.y+10,fill="yellow")
         self.points_recorded.append([self.x,self.y])
 
-
-
 if __name__ == "__main__":
-    app = AnnotationWindow()
-    app.mainloop() 
+    import argparse
+    
+    AP = argparse.ArgumentParser()
+    AP.add_argument("-p", "--file_path", required=True, help="file path to an image")
+    ARGS = vars(AP.parse_args()) 
+    
+    app = AnnotationWindow(tk.Tk(), ARGS['file_path'])
     print(app.points_recorded)
